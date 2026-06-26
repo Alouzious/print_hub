@@ -4,14 +4,21 @@ from dotenv import load_dotenv
 import dj_database_url
 
 # Build paths
-BASE_DIR = Path(__file__).resolve().parent.parent  # ← FIXED THIS LINE!
+BASE_DIR = Path(__file__).resolve().parent.parent
 load_dotenv()
 
 # SECURITY
 SECRET_KEY = os.environ.get('SECRET_KEY', 'django-insecure-dev-key-change-in-production')
-DEBUG = os.environ.get('DEBUG', 'True').lower() == 'true'
+DEBUG = os.environ.get('DEBUG', 'False').lower() == 'true'
 
-ALLOWED_HOSTS = ['*']
+ALLOWED_HOSTS = ['*', '.pythonanywhere.com']
+
+# CSRF Configuration
+CSRF_TRUSTED_ORIGINS = [
+    'https://*.pythonanywhere.com',
+    'http://localhost:5173',
+    'http://127.0.0.1:5173',
+]
 
 # Application definition
 INSTALLED_APPS = [
@@ -65,7 +72,7 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'core.wsgi.application'
 
-# Database
+# Database - Use SQLite for PythonAnywhere free tier
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.sqlite3',
@@ -73,12 +80,13 @@ DATABASES = {
     }
 }
 
-# CORS - Keep for now (won't hurt anything)
+# CORS Configuration
 CORS_ALLOW_ALL_ORIGINS = True
 CORS_ALLOW_CREDENTIALS = True
 CORS_ALLOWED_ORIGINS = [
     "http://localhost:5173",
     "http://127.0.0.1:5173",
+    "https://*.pythonanywhere.com",
 ]
 
 # REST Framework
@@ -97,11 +105,25 @@ TIME_ZONE = 'UTC'
 USE_I18N = True
 USE_TZ = True
 
-# Static files
-STATIC_URL = 'static/'
+# Static files (CSS, JavaScript, Images)
+STATIC_URL = '/static/'
 STATIC_ROOT = BASE_DIR / 'staticfiles'
 STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
 
+# Media files (User uploads)
+MEDIA_URL = '/media/'
+MEDIA_ROOT = BASE_DIR / 'media'
+
+# Default primary key field type
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
+# Custom User Model
 AUTH_USER_MODEL = 'accounts.CustomUser'
+
+# Security settings for production
+if not DEBUG:
+    SECURE_BROWSER_XSS_FILTER = True
+    SECURE_CONTENT_TYPE_NOSNIFF = True
+    X_FRAME_OPTIONS = 'DENY'
+    CSRF_COOKIE_HTTPONLY = True
+    SESSION_COOKIE_HTTPONLY = True
