@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import axios from 'axios';
 import { Link } from 'react-router-dom';
-
+import { getApiUrl } from '../utils/api';
 export default function OrderTracking() {
   const [orderId, setOrderId] = useState('');
   const [order, setOrder] = useState(null);
@@ -16,7 +16,7 @@ export default function OrderTracking() {
 
     try {
       // Fetch orders (In a real app, you'd have a specific endpoint for this)
-      const res = await axios.get('getApiUrl()/api/orders/admin/');
+      const res = await axios.get(getApiUrl('/api/orders/admin/'));
       const found = res.data.find(o => o.id === parseInt(orderId));
       
       if (found) {

@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import axios from 'axios';
+import { getApiUrl } from '../utils/api';
 
 export default function Login() {
   const [email, setEmail] = useState('');
@@ -14,7 +15,7 @@ export default function Login() {
     setLoading(true);
 
     try {
-      const response = await axios.post('getApiUrl()/api/auth/login/', {
+      const response = await axios.post(getApiUrl('/api/auth/login/'), {
         username: email, 
         password: password
       });
@@ -28,7 +29,7 @@ export default function Login() {
         window.location.href = '/upload';
       }, 100); // 100ms delay
       
-    } catch{
+    } catch {
       setError('Login failed. Check username and password.');
       setLoading(false);
     }

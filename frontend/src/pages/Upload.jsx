@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import axios from 'axios';
 import PaymentButton from '../components/PaymentButton';
+import { getApiUrl } from '../utils/api';
 
 export default function Upload() {
   const [selectedFile, setSelectedFile] = useState(null);
@@ -45,9 +46,9 @@ export default function Upload() {
     formData.append('client_id', userId);
 
     try {
-      const response = await axios.post('getApiUrl()/api/orders/create/', formData, {
-        headers: { 'Content-Type': 'multipart/form-data' }
-      });
+      const response = await axios.post(getApiUrl('orders/create/'), formData, {
+      headers: { 'Content-Type': 'multipart/form-data' }
+   });
       setOrderId(response.data.id);
       setShowPayment(true);
     } catch (error) {
