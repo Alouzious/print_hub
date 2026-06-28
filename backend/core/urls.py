@@ -9,6 +9,7 @@ from orders.views import (
     update_order_status_view,
     verify_payment_view,
     agent_dashboard_view,
+    order_receipt_view,
     download_order_file_view,
     order_track_view,
 )
@@ -31,5 +32,6 @@ urlpatterns = [
     path('orders/verify/', login_required(verify_payment_view), name='verify_payment'),
     path('orders/agent/', login_required(agent_dashboard_view), name='agent_dashboard'),
     path('orders/<int:order_id>/update/', login_required(update_order_status_view), name='update_order_status'),
+    path('orders/<int:order_id>/receipt/', login_required(order_receipt_view), name='order_receipt'),
     path('orders/<int:order_id>/file/', login_required(download_order_file_view), name='download_order_file'),
 ]
