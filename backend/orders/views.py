@@ -2,8 +2,6 @@ import os
 import mimetypes
 from datetime import timedelta
 
-import requests
-from django.conf import settings
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth import get_user_model
@@ -92,7 +90,7 @@ def upload_view(request):
             )
             messages.success(
                 request,
-                f'Order submitted successfully! Total: {order.total_price:,} UGX',
+                f'Order submitted! Pay at the pickup station after reviewing your prints. Total: {order.total_price:,} UGX',
             )
             return redirect('dashboard')
         except Exception as e:
@@ -103,64 +101,6 @@ def upload_view(request):
             })
 
     return render(request, 'orders/upload.html', {'stations': stations})
-
-
-@login_required
-def verify_payment_view(request):
-    order_id = request.GET.get('order_id') or request.POST.get('order_id')
-    if not order_id:
-        messages.error(request, 'Missing order ID.')
-        return redirect('dashboard')
-
-    order = get_object_or_404(Order, id=order_id, client=request.user)
-
-    if request.method == 'POST':
-        transaction_id = request.POST.get('transaction_id')
-        tx_ref = request.POST.get('tx_ref', '')
-
-        if not transaction_id:
-            messages.error(request, 'Missing transaction ID.')
-            return redirect('dashboard')
-
-        if not settings.FLUTTERWAVE_SECRET_KEY:
-            messages.error(request, 'Payment verification is not configured.')
-            return redirect('dashboard')
-
-        url = f'https://api.flutterwave.com/v3/transactions/{transaction_id}/verify'
-        headers = {
-            'Authorization': f'Bearer {settings.FLUTTERWAVE_SECRET_KEY}',
-            'Content-Type': 'application/json',
-        }
-
-        try:
-            response = requests.get(url, headers=headers, timeout=30)
-            data = response.json()
-
-            if (
-                data.get('status') == 'success'
-                and data.get('data', {}).get('status') == 'successful'
-            ):
-                paid_amount = int(float(data['data'].get('amount', 0)))
-                if paid_amount != order.total_price:
-                    messages.error(request, 'Payment amount does not match order total.')
-                    return redirect('dashboard')
-
-                order.transaction_id = str(transaction_id)
-                order.tx_ref = tx_ref or data['data'].get('tx_ref', '')
-                apply_order_status_change(order, 'paid')
-                messages.success(request, 'Payment verified successfully!')
-                return redirect('order_receipt', order_id=order.id)
-            else:
-                messages.error(request, 'Payment verification failed.')
-        except Exception as e:
-            messages.error(request, f'Error verifying payment: {str(e)}')
-
-        return redirect('dashboard')
-
-    return render(request, 'orders/verify_payment.html', {
-        'order': order,
-        'flutterwave_public_key': settings.FLUTTERWAVE_PUBLIC_KEY,
-    })
 
 
 @login_required

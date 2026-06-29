@@ -75,6 +75,10 @@
             </div>
             {% endif %}
             <div class="flex justify-between py-2 border-b border-white/10">
+                <span class="text-gray-400">Payment</span>
+                <span>{% if order.transaction_id %}Online{% else %}Cash at pickup{% endif %}</span>
+            </div>
+            <div class="flex justify-between py-2 border-b border-white/10">
                 <span class="text-gray-400">Amount Paid</span>
                 <span class="text-green-400 font-bold text-lg">{{ order.total_price|floatformat:0 }} UGX</span>
             </div>

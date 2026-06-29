@@ -1,15 +1,11 @@
 import { useState, useEffect, useMemo } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import axios from 'axios';
-import {
-  ArrowLeft, CheckCircle2, Receipt, FileCheck, FileText, X,
-  AlertCircle, Image as ImageIcon,
-} from 'lucide-react';
-import PaymentButton from '../components/PaymentButton';
 import { getApiUrl } from '../utils/api';
 import { calculatePrice, formatUgx, validateFile, formatFileSize } from '../utils/pricing';
 
 export default function Upload() {
+  const navigate = useNavigate();
   const [selectedFile, setSelectedFile] = useState(null);
   const [previewUrl, setPreviewUrl] = useState(null);
   const [fileError, setFileError] = useState(null);
@@ -17,12 +13,11 @@ export default function Upload() {
   const [isColor, setIsColor] = useState(false);
   const [isDoubleSided, setIsDoubleSided] = useState(false);
   const [station, setStation] = useState('main-campus');
-  const [orderId, setOrderId] = useState(null);
-  const [showPayment, setShowPayment] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
 
   const pricing = useMemo(
     () => calculatePrice(pageCount, isColor, isDoubleSided),
-    [pageCount, isColor, isDoubleSided]
+    [pageCount, isColor, isDoubleSided],
   );
 
   useEffect(() => {
@@ -33,25 +28,14 @@ export default function Upload() {
 
   const handleFileChange = (e) => {
     const file = e.target.files[0];
-    if (previewUrl) URL.revokeObjectURL(previewUrl);
+    if (!file) return;
 
-    if (!file) {
-      setSelectedFile(null);
-      setPreviewUrl(null);
-      setFileError(null);
-      setShowPayment(false);
-      setOrderId(null);
-      return;
-    }
-
-    const err = validateFile(file);
-    setFileError(err);
+    const error = validateFile(file);
+    setFileError(error);
     setSelectedFile(file);
-    setShowPayment(false);
-    setOrderId(null);
 
-    const ext = '.' + file.name.split('.').pop().toLowerCase();
-    if (['.png', '.jpg', '.jpeg'].includes(ext)) {
+    if (previewUrl) URL.revokeObjectURL(previewUrl);
+    if (file.type.startsWith('image/')) {
       setPreviewUrl(URL.createObjectURL(file));
     } else {
       setPreviewUrl(null);
@@ -59,24 +43,26 @@ export default function Upload() {
   };
 
   const clearFile = () => {
-    if (previewUrl) URL.revokeObjectURL(previewUrl);
     setSelectedFile(null);
-    setPreviewUrl(null);
     setFileError(null);
-    setShowPayment(false);
-    setOrderId(null);
+    if (previewUrl) URL.revokeObjectURL(previewUrl);
+    setPreviewUrl(null);
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!selectedFile || fileError) return;
 
-    const user = JSON.parse(localStorage.getItem('user'));
-    const userId = user?.id || 1;
+    const userId = JSON.parse(localStorage.getItem('user') || '{}')?.id;
+    if (!userId) {
+      alert('Please log in first.');
+      navigate('/login');
+      return;
+    }
 
+    setSubmitting(true);
     const formData = new FormData();
     formData.append('file', selectedFile);
-    formData.append('file_name', selectedFile.name);
     formData.append('page_count', pageCount);
     formData.append('is_color', isColor);
     formData.append('is_double_sided', isDoubleSided);
@@ -84,27 +70,16 @@ export default function Upload() {
     formData.append('client_id', userId);
 
     try {
-      const response = await axios.post(getApiUrl('orders/create/'), formData, {
+      await axios.post(getApiUrl('orders/create/'), formData, {
         headers: { 'Content-Type': 'multipart/form-data' },
       });
-      setOrderId(response.data.id);
-      setShowPayment(true);
+      alert('Order submitted! Pay at the pickup station after reviewing your prints.');
+      navigate('/track');
     } catch (error) {
       console.error(error);
       alert('Failed to create order. Check console.');
-    }
-  };
-
-  const handlePaymentSuccess = async (transactionId) => {
-    try {
-      await axios.post(getApiUrl('orders/verify/'), {
-        transaction_id: transactionId,
-        order_id: orderId,
-      });
-      alert('Payment Successful! Your order is now being printed.');
-    } catch (error) {
-      console.error(error);
-      alert('Payment verification failed. Please contact support.');
+    } finally {
+      setSubmitting(false);
     }
   };
 
@@ -117,12 +92,10 @@ export default function Upload() {
 
       <div className="relative z-10 w-full max-w-4xl grid grid-cols-1 md:grid-cols-2 gap-8">
         <div className="bg-white/5 border border-white/10 backdrop-blur-md rounded-3xl p-8 shadow-2xl">
-          <Link to="/" className="text-blue-400 hover:text-blue-300 mb-4 inline-flex items-center gap-1.5 text-sm">
-            <ArrowLeft className="w-4 h-4" /> Back to Home
+          <Link to="/" className="text-blue-400 hover:text-blue-300 mb-4 inline-block text-sm">
+            Back to Home
           </Link>
-          <h2 className="text-2xl font-bold text-white mb-6 flex items-center gap-2">
-            <FileCheck className="w-6 h-6 text-blue-400" /> Upload Document
-          </h2>
+          <h2 className="text-2xl font-bold text-white mb-6">Upload Document</h2>
 
           <form onSubmit={handleSubmit} className="space-y-5">
             <div>
@@ -143,8 +116,8 @@ export default function Upload() {
                     <p className="text-white font-medium text-sm">{selectedFile.name}</p>
                     <p className="text-gray-400 text-xs">{formatFileSize(selectedFile.size)}</p>
                   </div>
-                  <button type="button" onClick={clearFile} className="text-gray-400 hover:text-red-400">
-                    <X className="w-4 h-4" />
+                  <button type="button" onClick={clearFile} className="text-gray-400 hover:text-red-400 text-sm">
+                    Remove
                   </button>
                 </div>
 
@@ -152,26 +125,16 @@ export default function Upload() {
                   <img src={previewUrl} alt="Preview" className="mt-3 max-h-40 rounded-lg border border-white/10" />
                 )}
                 {!previewUrl && ext === '.pdf' && (
-                  <div className="mt-3 flex items-center gap-3">
-                    <div className="w-12 h-12 bg-red-500/20 rounded-lg flex items-center justify-center">
-                      <FileText className="w-6 h-6 text-red-400" />
-                    </div>
-                    <p className="text-gray-400 text-xs">PDF — est. ~{Math.max(1, Math.round(selectedFile.size / 51200))} pages</p>
-                  </div>
+                  <p className="text-gray-400 text-xs mt-3">PDF — est. ~{Math.max(1, Math.round(selectedFile.size / 51200))} pages</p>
                 )}
                 {!previewUrl && ext !== '.pdf' && selectedFile && (
-                  <div className="mt-3 flex items-center gap-3">
-                    <div className="w-12 h-12 bg-blue-500/20 rounded-lg flex items-center justify-center">
-                      <ImageIcon className="w-6 h-6 text-blue-400" />
-                    </div>
-                    <p className="text-gray-400 text-xs">Document file</p>
-                  </div>
+                  <p className="text-gray-400 text-xs mt-3">Document file</p>
                 )}
 
                 {fileError ? (
-                  <p className="text-red-400 text-xs mt-2 flex items-center gap-1"><AlertCircle className="w-3.5 h-3.5" />{fileError}</p>
+                  <p className="text-red-400 text-xs mt-2">{fileError}</p>
                 ) : (
-                  <p className="text-green-400 text-xs mt-2 flex items-center gap-1"><CheckCircle2 className="w-3.5 h-3.5" /> File ready</p>
+                  <p className="text-green-400 text-xs mt-2">File ready</p>
                 )}
               </div>
             )}
@@ -214,9 +177,7 @@ export default function Upload() {
 
         <div className="bg-white/5 border border-white/10 backdrop-blur-md rounded-3xl p-8 shadow-2xl flex flex-col justify-between">
           <div>
-            <h3 className="text-xl font-bold text-white mb-6 flex items-center gap-2">
-              <Receipt className="w-5 h-5 text-blue-400" /> Live Price Breakdown
-            </h3>
+            <h3 className="text-xl font-bold text-white mb-6">Live Price Breakdown</h3>
             <div className="space-y-3 text-gray-300 text-sm">
               <div className="flex justify-between py-2 border-b border-white/10">
                 <span>Pages</span><span>{pricing.pages}</span>
@@ -235,19 +196,16 @@ export default function Upload() {
             <div className="mt-8 bg-gradient-to-r from-blue-600/20 to-purple-600/20 border border-blue-500/30 rounded-2xl p-6 text-center">
               <p className="text-gray-400 text-sm mb-1">Total Amount Due</p>
               <p className="text-4xl font-black text-white">{formatUgx(pricing.total)}</p>
+              <p className="text-gray-500 text-xs mt-2">Pay in cash at pickup after reviewing your prints</p>
             </div>
           </div>
 
           <div className="mt-8">
-            {showPayment ? (
-              <PaymentButton amount={pricing.total} onPaymentSuccess={handlePaymentSuccess} />
-            ) : (
-              <button type="submit" onClick={handleSubmit}
-                className="w-full bg-gradient-to-r from-blue-600 to-purple-600 text-white font-bold py-4 rounded-xl hover:shadow-lg transition-all disabled:opacity-50"
-                disabled={!selectedFile || !!fileError}>
-                Proceed to Payment
-              </button>
-            )}
+            <button type="submit" onClick={handleSubmit}
+              className="w-full bg-gradient-to-r from-blue-600 to-purple-600 text-white font-bold py-4 rounded-xl hover:shadow-lg transition-all disabled:opacity-50"
+              disabled={!selectedFile || !!fileError || submitting}>
+              {submitting ? 'Submitting...' : 'Submit Order'}
+            </button>
           </div>
         </div>
       </div>

@@ -89,6 +89,7 @@
             <div class="mt-6 bg-gradient-to-r from-blue-600/20 to-purple-600/20 border border-blue-500/30 rounded-2xl p-6 text-center">
                 <p class="text-gray-400 text-sm mb-1">Total</p>
                 <p class="text-4xl font-black text-white" id="price-total">UGX 200</p>
+                <p class="text-gray-500 text-xs mt-2">Pay in cash at pickup after reviewing your prints</p>
             </div>
         </div>
     </div>
@@ -167,7 +168,7 @@
             fileValidation.innerHTML = '<span class="text-red-400">' + err + '</span>';
             submitBtn.disabled = true;
         } else {
-            fileValidation.innerHTML = '<span class="text-green-400 flex items-center gap-1"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg> File ready</span>';
+            fileValidation.innerHTML = '<span class="text-green-400">File ready</span>';
             submitBtn.disabled = false;
         }
     });

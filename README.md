@@ -1,6 +1,6 @@
 # PrintHub
 
-PrintHub is a campus print ordering platform for Kabale University students. Students upload documents, pay via MTN/Airtel Mobile Money (Flutterwave), and pick up prints at a campus station.
+PrintHub is a campus print ordering platform for Kabale University students. Students upload documents online, pick them up at a campus station, and pay in person after reviewing their prints.
 
 ## Stack
 
@@ -113,10 +113,10 @@ Agents without a station see a message on `/orders/agent/` and cannot process or
 
 1. **Register** → verify email → **Login**
 2. **Upload** at `/upload/` with live price preview
-3. **Pay** from dashboard → Flutterwave Mobile Money
-4. View **receipt** at `/orders/<id>/receipt/` after payment
-5. **Track** order at `/track/` with visual status timeline
-6. **Admin/Agent** dashboards for order management
+3. **Track** order at `/track/` with visual status timeline
+4. **Pay at pickup** — review prints, pay in cash, staff marks order as paid
+5. View **receipt** at `/orders/<id>/receipt/` after payment is recorded
+6. **Admin/Agent** dashboards for order management and marking payments
 
 ## Pricing
 
@@ -136,8 +136,6 @@ Double-sided printing uses half the page count (rounded up) for billing.
 | `ALLOWED_HOSTS` | Comma-separated hostnames |
 | `CSRF_TRUSTED_ORIGINS` | Comma-separated HTTPS origins |
 | `CORS_ALLOWED_ORIGINS` | Comma-separated origins for React API |
-| `FLUTTERWAVE_SECRET_KEY` | Flutterwave secret key |
-| `FLUTTERWAVE_PUBLIC_KEY` | Flutterwave public key |
 | `DATABASE_URL` | Database connection string |
 | `EMAIL_*` | Email configuration (see above) |
 | `DEFAULT_FROM_EMAIL` | Outgoing email sender |
